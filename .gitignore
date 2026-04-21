@@ -1,0 +1,31 @@
+# Exclude actual health check data files (large, stored in S3)
+Falcon_Health_Check_Stats_*.json
+
+# Exclude the list of actual data files (will be generated from S3)
+list_files.json
+
+# Keep sample/template files
+!sample_data.json
+!list_files.sample.json
+
+# Temporary/generated files
+/tmp/
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Keep deployment scripts
+!*.sh
+!*.md

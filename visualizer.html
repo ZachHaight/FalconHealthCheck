@@ -1668,6 +1668,12 @@
 
         // ==================== END RBAC SYSTEM ====================
 
+        // ========== CONFIGURATION ==========
+        // Set DATA_SOURCE_URL to your S3 bucket URL or leave empty for local files
+        // Example: 'https://your-bucket.s3.us-east-1.amazonaws.com/data/'
+        const DATA_SOURCE_URL = '';
+        // ===================================
+
         let allHealthChecks = {}; // {filename: {date, data}}
         let currentHealthCheckFile = '';
         let fullData = [];
@@ -1795,12 +1801,14 @@
         async function loadData() {
             try {
                 // Fetch list of health check files
-                const filesResponse = await fetch('list_files.json');
+                const manifestUrl = DATA_SOURCE_URL ? `${DATA_SOURCE_URL}list_files.json` : 'list_files.json';
+                const filesResponse = await fetch(manifestUrl);
                 const filesList = await filesResponse.json();
 
                 // Load all health check files
                 for (const filename of filesList.files) {
-                    const response = await fetch(filename);
+                    const fileUrl = DATA_SOURCE_URL ? `${DATA_SOURCE_URL}${filename}` : filename;
+                    const response = await fetch(fileUrl);
                     const data = await response.json();
                     const date = extractDateFromFilename(filename);
 
@@ -2827,7 +2835,7 @@
                 <div class="warning-note">
                     <div>
                         <strong>Billing Cost Calculator:</strong>
-                        <span style="opacity: 0.95;"> Estimate costs based on workstation and server counts with configurable pricing.</span>
+                        <span style="opacity: 0.95;"> Estimate costs based on workstation and server counts.</span>
                     </div>
                 </div>
             `;
@@ -2892,7 +2900,7 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Server Price (per unit/year):</label>
                         <div style="position: relative;">
                             <span style="position: absolute; left: 12px; top: 11px; color: var(--text-secondary); font-weight: 600;">$</span>
-                            <input type="number" id="server-price" value="40.00" step="0.01" min="0"
+                            <input type="number" id="server-price" value="41.00" step="0.01" min="0"
                                 style="width: 100%; padding: 10px 10px 10px 25px; border: 2px solid var(--border-color);
                                 border-radius: 6px; background: var(--bg-card); color: var(--text-primary); font-size: 14px;">
                         </div>
