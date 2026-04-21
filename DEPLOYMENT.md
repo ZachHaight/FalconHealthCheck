@@ -284,3 +284,4 @@ Add this to your crontab:
 - **Data Transfer:** $0.09/GB out (first 10TB) - free if using CloudFront
 
 **Estimated monthly cost:** <$10 for typical usage
+
