@@ -127,3 +127,4 @@ Open visualizer → Refresh → See 7 snapshots!
 ## Automate with Lambda (Optional)
 
 See `DEPLOYMENT.md` for Lambda function that auto-updates the manifest when you upload new files to S3.
+
