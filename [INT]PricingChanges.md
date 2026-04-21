@@ -6,7 +6,8 @@ This guide explains how to customize pricing in the calculators and remove Amazo
 
 1. [Changing Calculator Pricing](#changing-calculator-pricing)
 2. [Removing Amazon Exception Tracker](#removing-amazon-exception-tracker)
-3. [Testing Your Changes](#testing-your-changes)
+3. [Removing Metered Use / Cloud Billing](#removing-metered-use--cloud-billing)
+4. [Testing Your Changes](#testing-your-changes)
 
 ---
 
@@ -181,7 +182,149 @@ git push
 
 ---
 
-## Troubleshooting
+## Removing Metered Use / Cloud Billing
+
+The **Cloud Billing Estimation** (also called "Metered Use" or "Consumption Billing") tracks metered usage for CrowdStrike services. This feature is primarily used by Amazon and not applicable to most CrowdStrike customers. If you want to remove this feature entirely, follow these steps.
+
+### Overview
+
+This feature has three components:
+1. **Navigation Menu Items** - "Metered Use" (in hamburger menu) and "Cloud Billing Estimation" (in Cost Allocation)
+2. **Route Handler** - Code that responds when users click the menu items
+3. **Function Definitions** - Two functions that render the metered use display and charts
+
+### Step 1: Remove Navigation Menu Items
+
+#### Remove "Metered Use" from Hamburger Menu
+
+**Location:** Lines ~1388-1391
+
+**Find:**
+```html
+<div class="nav-item nav-sub-item" onclick="navigateTo('metered_ng')">
+    <span class="nav-icon"></span>
+    <span>Metered Use</span>
+</div>
+```
+
+**Action:** Delete these 4 lines entirely
+
+#### Remove "Cloud Billing Estimation" from Cost Allocation Menu
+
+**Location:** Lines ~1418-1421
+
+**Find:**
+```html
+<div class="nav-item nav-sub-item" onclick="navigateTo('consumption-billing')">
+    <span class="nav-icon"></span>
+    <span>Cloud Billing Estimation</span>
+</div>
+```
+
+**Action:** Delete these 4 lines entirely
+
+### Step 2: Remove Worksheet Display Name Mapping
+
+**Location:** Line ~1699
+
+**Find:**
+```javascript
+'metered_ng': 'Metered Use'
+```
+
+**Action:** Delete this entire line (including the comma at the end)
+
+### Step 3: Remove Route Handler
+
+**Location:** Lines ~1728-1729
+
+**Find:**
+```javascript
+} else if (view === 'consumption-billing') {
+    showConsumptionBilling();
+```
+
+**Action:** Delete these 2 lines
+
+### Step 4: Remove Main Function
+
+**Location:** Lines 2016-2430 (entire function, approximately 415 lines)
+
+**Find:** The function starting with:
+```javascript
+function showConsumptionBilling() {
+    document.getElementById('tabs-container').style.display = 'none';
+    const contentContainer = document.getElementById('content');
+    contentContainer.innerHTML = '';
+    contentContainer.style.display = 'block';
+    ...
+```
+
+**Find the ending:** Around line 2430:
+```javascript
+        renderConsumptionCharts(contentContainer, meteredData);
+    }
+```
+
+**Action:** Delete the entire function from line 2016 to line 2430
+
+### Step 5: Remove Charts Rendering Function
+
+**Location:** Lines 2432-2556 (entire function, approximately 125 lines)
+
+**Find:** The function starting with:
+```javascript
+// Render consumption billing charts
+function renderConsumptionCharts(container, meteredData) {
+    const chartsGrid = document.createElement('div');
+    chartsGrid.className = 'dashboard-charts-grid';
+    ...
+```
+
+**Find the ending:** Around line 2556:
+```javascript
+            });
+        });
+    }
+```
+
+**Action:** Delete the entire function from line 2432 to line 2556 (including the comment line above it)
+
+### Quick Search Method
+
+To locate these sections quickly:
+
+1. **Menu Items:** Search for `metered_ng` and `consumption-billing`
+2. **Display Name:** Search for `'metered_ng': 'Metered Use'`
+3. **Route Handler:** Search for `showConsumptionBilling()`
+4. **Main Function:** Search for `function showConsumptionBilling()`
+5. **Chart Function:** Search for `function renderConsumptionCharts(`
+
+### What Gets Removed
+
+- **Navigation menu items:** "Metered Use" and "Cloud Billing Estimation"
+- **Entire consumption billing/metered use page**
+- **Cloud workload calculations** (AWS/Azure/GCP instances)
+- **Metered consumption tracking over time**
+- **Consumption trend charts**
+
+### Important Notes
+
+**⚠️ Keep these functions:**
+- `getChartTextColor()` (around line 2558)
+- `getChartGridColor()` (around line 2564)
+
+These helper functions are used by OTHER charts in the visualizer, not just metered use. Only delete up to line 2556.
+
+**⚠️ If you see this comment, STOP:**
+```javascript
+// Helper function to get chart text color based on current theme
+```
+This marks where the metered use code ends. Don't delete beyond this point.
+
+---
+
+## Testing Your Changes
 
 ### Calculator Not Loading
 
@@ -195,8 +338,23 @@ git push
 
 ### JavaScript Errors
 
-**Issue:** Console shows "showAmazonExceptions is not defined"
-**Solution:** Make sure you removed BOTH the route handler (Step 2) AND the function (Step 3)
+**Issue:** Console shows "showAmazonExceptions is not defined" or "showConsumptionBilling is not defined"
+**Solution:** Make sure you removed BOTH the route handler (Step 2/3) AND the function definitions (Step 3-5 for respective features)
+
+### Charts Still Show After Removal
+
+**Issue:** Metered use or consumption charts still appear
+**Solution:** Clear browser cache (Cmd+Shift+R on Mac, Ctrl+F5 on Windows) and verify you deleted the chart rendering function
+
+### Other Charts Broken After Metered Use Removal
+
+**Issue:** Dashboard or other charts no longer work
+**Solution:** You may have deleted the helper functions. Check that these functions still exist around lines 2558-2568:
+```javascript
+function getChartTextColor() { ... }
+function getChartGridColor() { ... }
+```
+These are shared by all charts. If missing, restore them from the original file.
 
 ### Page Won't Load
 
@@ -241,6 +399,12 @@ https://github.com/ZachHaight/FalconHealthCheck
 - 3 separate locations modified
 - Medium risk - test thoroughly
 
+**For Removing Metered Use / Cloud Billing:**
+- ~545 lines deleted
+- 5 separate locations modified
+- Medium-high risk - test thoroughly
+- Note: Most customers don't use this feature (Amazon-specific)
+
 ---
 
 ## Support
@@ -253,5 +417,5 @@ If you encounter issues:
 
 ---
 
-**Last Updated:** 2026-04-20
+**Last Updated:** 2026-04-21
 **Applies to:** FalconHealthCheckVisualizer.html v1.0
