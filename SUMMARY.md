@@ -12,9 +12,7 @@ Your CrowdStrike Falcon Health Check Visualizer is now configured for cloud depl
 - ✅ Simplified cost calculator description
 
 ### 2. **Automation Scripts**
-- ✅ `update_manifest.sh` - Updates manifest from local files
-- ✅ `generate_manifest_from_s3.sh` - Generates manifest from S3 bucket
-- ✅ Git pre-commit hook - Auto-updates manifest on commit
+- ✅ `generate_manifest_from_s3.sh` - Generates manifest from S3 bucket for production deployments
 
 ### 3. **Documentation**
 - ✅ `README.md` - Updated with cloud deployment info
@@ -109,17 +107,27 @@ aws s3 cp Falcon_Health_Check_Stats_NEW.json s3://your-bucket/
 
 Set up AWS Lambda (see `DEPLOYMENT.md`) to auto-update the manifest when new files are uploaded to S3. Then you literally just upload the JSON file and everything else happens automatically.
 
-## Files Ready for Commit
+## Files Ready for Deployment
 
-- ✅ `FalconHealthCheckVisualizer.html` (with S3 support)
-- ✅ `README.md` (updated)
-- ✅ `DEPLOYMENT.md` (full guide)
-- ✅ `QUICKSTART.md` (5-min setup)
-- ✅ `update_manifest.sh` (local)
-- ✅ `generate_manifest_from_s3.sh` (S3)
-- ✅ `list_files.sample.json` (template)
-- ✅ `sample_data.json` (example)
-- ✅ `.gitignore` (excludes large files)
+**Core Application:**
+- ✅ `FalconHealthCheckVisualizer.html` - Main visualizer with S3 support
+
+**Documentation:**
+- ✅ `README.md` - Overview and usage
+- ✅ `DEPLOYMENT.md` - Production deployment guide
+- ✅ `QUICKSTART.md` - 5-minute setup
+- ✅ `SUMMARY.md` - What changed
+
+**Automation:**
+- ✅ `generate_manifest_from_s3.sh` - S3 manifest generator
+
+**Examples:**
+- ✅ `list_files.sample.json` - Manifest template
+- ✅ `sample_data.json` - Data structure example
+
+**Assets:**
+- ✅ Logo images (referenced by visualizer)
+- ✅ `.gitignore` - Excludes large data files
 
 **Large JSON files are gitignored** - they'll live in S3, not GitHub!
 
