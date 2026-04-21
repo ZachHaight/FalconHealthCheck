@@ -1,0 +1,7 @@
+# FalconHealthCheck
+
+CrowdStrike Falcon Health Check Visualizer - Interactive dashboard for visualizing health check data with cloud storage support.
+
+**Live Demo:** Configure with your S3 bucket and deploy to GitHub Pages in 5 minutes.
+
+**Key Features:** Multi-snapshot analysis, cost calculator, cloud billing tracking, Amazon exception monitoring.
