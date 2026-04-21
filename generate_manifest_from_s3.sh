@@ -52,3 +52,4 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     aws s3 cp list_files.json "$S3_PATH/list_files.json"
     echo "✓ Uploaded list_files.json to $S3_PATH"
 fi
+
