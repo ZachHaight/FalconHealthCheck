@@ -7,7 +7,7 @@ This guide explains how to deploy the CrowdStrike Health Check Visualizer with c
 ```
 ┌─────────────────────────────────────────────────┐
 │  Web Server (GitHub Pages / S3 Static Hosting) │
-│  - visualizer.html                              │
+│  - FalconHealthCheckVisualizer.html                              │
 │  - list_files.json (manifest)                   │
 └─────────────────────────────────────────────────┘
                     ↓ fetches data from
@@ -74,7 +74,7 @@ aws s3api put-bucket-policy --bucket your-company-falcon-data --policy file://bu
 
 ### 3. Update Visualizer Configuration
 
-Edit `visualizer.html` and set the `DATA_SOURCE_URL`:
+Edit `FalconHealthCheckVisualizer.html` and set the `DATA_SOURCE_URL`:
 
 ```javascript
 // ========== CONFIGURATION ==========
@@ -93,7 +93,7 @@ const DATA_SOURCE_URL = 'https://your-company-falcon-data.s3.us-east-1.amazonaws
 gh repo create falcon-visualizer --public --source=. --remote=origin
 
 # Commit and push
-git add visualizer.html list_files.json
+git add FalconHealthCheckVisualizer.html list_files.json
 git commit -m "Deploy visualizer"
 git push -u origin main
 
@@ -101,16 +101,16 @@ git push -u origin main
 gh repo edit --enable-pages --pages-branch main
 ```
 
-Your visualizer will be live at: `https://your-username.github.io/falcon-visualizer/visualizer.html`
+Your visualizer will be live at: `https://your-username.github.io/falcon-visualizer/FalconHealthCheckVisualizer.html`
 
 #### Option B: S3 Static Website Hosting
 
 ```bash
 # Enable static website hosting
-aws s3 website s3://your-company-falcon-data/ --index-document visualizer.html
+aws s3 website s3://your-company-falcon-data/ --index-document FalconHealthCheckVisualizer.html
 
 # Upload visualizer
-aws s3 cp visualizer.html s3://your-company-falcon-data/
+aws s3 cp FalconHealthCheckVisualizer.html s3://your-company-falcon-data/
 aws s3 cp list_files.json s3://your-company-falcon-data/
 ```
 
@@ -222,7 +222,7 @@ Add this to your crontab:
    ```bash
    # Set DATA_SOURCE_URL to empty string
    python3 -m http.server 9000
-   # Visit http://localhost:9000/visualizer.html
+   # Visit http://localhost:9000/FalconHealthCheckVisualizer.html
    ```
 
 2. **Cloud Testing:**
@@ -231,7 +231,7 @@ Add this to your crontab:
    curl https://your-company-falcon-data.s3.amazonaws.com/list_files.json
 
    # Test visualizer
-   curl https://your-username.github.io/falcon-visualizer/visualizer.html
+   curl https://your-username.github.io/falcon-visualizer/FalconHealthCheckVisualizer.html
    ```
 
 ## Workflow Summary

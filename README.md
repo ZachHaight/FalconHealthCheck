@@ -26,7 +26,7 @@ cd falcon-visualizer
 python3 -m http.server 8000
 
 # Open browser
-open http://localhost:8000/visualizer.html
+open http://localhost:8000/FalconHealthCheckVisualizer.html
 ```
 
 ### Cloud Deployment with Auto-Updates
@@ -76,7 +76,7 @@ aws s3 cp Falcon_Health_Check_Stats_2026-04-27_*.json s3://your-bucket/
 
 ## Configuration
 
-Edit `visualizer.html` line ~1671 to set your data source:
+Edit `FalconHealthCheckVisualizer.html` line ~1671 to set your data source:
 
 ```javascript
 // Local files (default)
@@ -114,7 +114,7 @@ const DATA_SOURCE_URL = 'https://your-bucket.s3.us-east-1.amazonaws.com/';
 
 ```
 .
-├── visualizer.html                    # Main application
+├── FalconHealthCheckVisualizer.html                    # Main application
 ├── list_files.json                    # Data manifest (auto-generated)
 ├── sample_data.json                   # Example data structure
 ├── update_manifest.sh                 # Local manifest updater

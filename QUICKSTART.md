@@ -49,7 +49,7 @@ aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy file:///tmp/policy.js
 
 ### 2. Update Visualizer Configuration
 
-Edit `visualizer.html` line ~1671:
+Edit `FalconHealthCheckVisualizer.html` line ~1671:
 
 ```javascript
 const DATA_SOURCE_URL = 'https://your-company-falcon-data.s3.us-east-1.amazonaws.com/';
@@ -75,7 +75,7 @@ aws s3 sync . s3://$BUCKET_NAME/ \
 
 ```bash
 # Push to GitHub
-git add visualizer.html
+git add FalconHealthCheckVisualizer.html
 git commit -m "Deploy visualizer with S3 backend"
 gh repo create falcon-visualizer --public --source=. --remote=origin --push
 
@@ -83,20 +83,20 @@ gh repo create falcon-visualizer --public --source=. --remote=origin --push
 gh repo edit --enable-pages --pages-branch main
 
 # Your visualizer will be live at:
-# https://your-username.github.io/falcon-visualizer/visualizer.html
+# https://your-username.github.io/falcon-visualizer/FalconHealthCheckVisualizer.html
 ```
 
 #### Option B: S3 Static Hosting
 
 ```bash
 # Enable website hosting
-aws s3 website s3://$BUCKET_NAME/ --index-document visualizer.html
+aws s3 website s3://$BUCKET_NAME/ --index-document FalconHealthCheckVisualizer.html
 
 # Upload visualizer
-aws s3 cp visualizer.html s3://$BUCKET_NAME/
+aws s3 cp FalconHealthCheckVisualizer.html s3://$BUCKET_NAME/
 
 # Your visualizer will be live at:
-# http://$BUCKET_NAME.s3-website-us-east-1.amazonaws.com/visualizer.html
+# http://$BUCKET_NAME.s3-website-us-east-1.amazonaws.com/FalconHealthCheckVisualizer.html
 ```
 
 ## Weekly Update Process

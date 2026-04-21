@@ -27,7 +27,7 @@ Your CrowdStrike Falcon Health Check Visualizer is now configured for cloud depl
 ```
 ┌──────────────────────────────────────────────┐
 │  GitHub Pages (or any web host)             │
-│  - Serves visualizer.html                   │
+│  - Serves FalconHealthCheckVisualizer.html                   │
 │  - Fetches data from S3                     │
 └──────────────────────────────────────────────┘
               ↓ loads data from
@@ -52,7 +52,7 @@ Your CrowdStrike Falcon Health Check Visualizer is now configured for cloud depl
 ```bash
 cd ~/Desktop/Value
 python3 -m http.server 9000
-# Visit http://localhost:9000/visualizer.html
+# Visit http://localhost:9000/FalconHealthCheckVisualizer.html
 ```
 
 ### Option 2: Deploy to GitHub Pages
@@ -60,7 +60,7 @@ python3 -m http.server 9000
 cd ~/Desktop/Value
 
 # Create repo and push
-git add visualizer.html list_files.sample.json sample_data.json README.md DEPLOYMENT.md QUICKSTART.md *.sh
+git add FalconHealthCheckVisualizer.html list_files.sample.json sample_data.json README.md DEPLOYMENT.md QUICKSTART.md *.sh
 git commit -m "Initial commit - Falcon Health Check Visualizer with cloud support"
 gh repo create falcon-visualizer --public --source=. --remote=origin --push
 
@@ -68,14 +68,14 @@ gh repo create falcon-visualizer --public --source=. --remote=origin --push
 gh repo edit --enable-pages --pages-branch main
 
 # Your visualizer will be live at:
-# https://ZachHaight.github.io/falcon-visualizer/visualizer.html
+# https://ZachHaight.github.io/falcon-visualizer/FalconHealthCheckVisualizer.html
 ```
 
 ### Option 3: Full S3 Deployment
 
 Follow `QUICKSTART.md` - takes 5 minutes:
 1. Create S3 bucket with CORS
-2. Update `DATA_SOURCE_URL` in visualizer.html
+2. Update `DATA_SOURCE_URL` in FalconHealthCheckVisualizer.html
 3. Upload visualizer to GitHub Pages (free)
 4. Upload data files to S3
 5. Generate manifest
@@ -83,7 +83,7 @@ Follow `QUICKSTART.md` - takes 5 minutes:
 
 ## What Amazon Will See
 
-1. **Clean URL:** `https://your-username.github.io/falcon-visualizer/visualizer.html`
+1. **Clean URL:** `https://your-username.github.io/falcon-visualizer/FalconHealthCheckVisualizer.html`
 2. **Live Dashboard:** Fully interactive with their data
 3. **Multiple Snapshots:** 7 time periods (Feb → Apr 2026)
 4. **Amazon Exception Tracker:** Shows only AWS Corp Prod data
@@ -111,7 +111,7 @@ Set up AWS Lambda (see `DEPLOYMENT.md`) to auto-update the manifest when new fil
 
 ## Files Ready for Commit
 
-- ✅ `visualizer.html` (with S3 support)
+- ✅ `FalconHealthCheckVisualizer.html` (with S3 support)
 - ✅ `README.md` (updated)
 - ✅ `DEPLOYMENT.md` (full guide)
 - ✅ `QUICKSTART.md` (5-min setup)
