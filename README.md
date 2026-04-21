@@ -4,14 +4,14 @@ Interactive web-based dashboard for visualizing CrowdStrike Falcon health check 
 
 ## Features
 
-- **📊 Interactive Dashboard:** Real-time visualization of sensor health, detections, and policy scores
-- **🔍 Multi-Snapshot Analysis:** Compare trends across multiple time periods
-- **💰 Cost Calculator:** EPP billing estimation with workstation/server classification
-- **☁️ Cloud Billing:** AWS/Azure/GCP consumption tracking
-- **🎯 Amazon Exception Tracker:** Special pricing accommodation monitoring
-- **📈 Trend Analysis:** Historical performance tracking with delta indicators
-- **🔐 RBAC Ready:** Customer instance (CID) isolation
-- **🌓 Dark Mode:** Toggle between light and dark themes
+- **Interactive Dashboard:** Real-time visualization of sensor health, detections, and policy scores
+- **Multi-Snapshot Analysis:** Compare trends across multiple time periods
+- **Cost Calculator:** EPP billing estimation with workstation/server classification
+- **Cloud Billing:** AWS/Azure/GCP consumption tracking
+- **Amazon Exception Tracker:** Special pricing accommodation monitoring
+- **Trend Analysis:** Historical performance tracking with delta indicators
+- **RBAC Ready:** Customer instance (CID) isolation
+- **Dark Mode:** Toggle between light and dark themes
 
 ## Quick Start
 
