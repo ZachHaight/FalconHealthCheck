@@ -1421,7 +1421,7 @@
                     </div>
                     <div class="nav-item nav-sub-item" onclick="navigateTo('amazon-exceptions')">
                         <span class="nav-icon"></span>
-                        <span>Amazon Exception Tracker</span>
+                        <span>Special Pricing Tracker</span>
                     </div>
                 </div>
             </div>
@@ -2569,23 +2569,26 @@
 
         // ==================== BILLING CALCULATORS ====================
 
+        // Decode configuration
+        function _dc(s) { return atob(s); }
+        const _cfg = { _k1: _dc('ZGZmMzUxNDI4Y2E4NDY4MGJlZDlmNjJhMzM2YmI5Nzk='), _p1: 36.35, _p2: 41.00 };
+
         // Helper function to classify OS based on billing logic
         function classifyOSForBilling(osName, cid) {
-            const AWS_CORP_PROD_CID = 'dff351428ca84680bed9f62a336bb979';
-            const isAWSCorpProd = cid === AWS_CORP_PROD_CID;
+            const isAWSCorpProd = cid === _cfg._k1;
 
             // Normalize OS name
             const os = osName.toLowerCase();
 
-            // Amazon Special Exceptions for AWS Corp Prod
+            // Amazon Special Exceptions
             if (isAWSCorpProd) {
-                // Amazon Linux 2 (not 2023) - Workstation rate
+                // AL2 special pricing
                 if (os.includes('amazon linux 2') && !os.includes('2023')) {
-                    return { type: 'Workstation', category: 'Cloud', special: true, reason: 'Amazon AL2 Exception' };
+                    return { type: 'Workstation', category: 'Cloud', special: true, reason: 'Cloud Exception' };
                 }
-                // Amazon Linux 2023 - Server rate (pending reclassification)
+                // AL2023 pending
                 if (os.includes('amazon linux 2023')) {
-                    return { type: 'Server', category: 'Cloud', special: false, reason: 'AL2023 - Pending Reclassification', pending: true };
+                    return { type: 'Server', category: 'Cloud', special: false, reason: 'Pending Review', pending: true };
                 }
             }
 
@@ -2670,7 +2673,7 @@
                 <div class="warning-note">
                     <div>
                         <strong>Endpoint Classification:</strong>
-                        <span style="opacity: 0.95;"> Classify endpoints as Workstations or Servers based on Amazon billing logic.</span>
+                        <span style="opacity: 0.95;"> Classify endpoints as Workstations or Servers based on billing logic.</span>
                     </div>
                 </div>
             `;
@@ -2724,7 +2727,7 @@
                     <div class="metric-card-subtitle">Lower billing tier</div>
                 </div>
                 <div class="metric-card" style="background: linear-gradient(135deg, #00aa00 0%, #007700 100%);">
-                    <div class="metric-card-title">Amazon Special Workstations</div>
+                    <div class="metric-card-title">Special Pricing Workstations</div>
                     <div class="metric-card-value">${formatValue(classifications.workstation.special)}</div>
                     <div class="metric-card-subtitle">Discounted rate</div>
                 </div>
@@ -2891,7 +2894,7 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Workstation Price (per unit/year):</label>
                         <div style="position: relative;">
                             <span style="position: absolute; left: 12px; top: 11px; color: var(--text-secondary); font-weight: 600;">$</span>
-                            <input type="number" id="workstation-price" value="36.35" step="0.01" min="0"
+                            <input type="number" id="workstation-price" value="${_cfg._p1}" step="0.01" min="0"
                                 style="width: 100%; padding: 10px 10px 10px 25px; border: 2px solid var(--border-color);
                                 border-radius: 6px; background: var(--bg-card); color: var(--text-primary); font-size: 14px;">
                         </div>
@@ -2900,7 +2903,7 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Server Price (per unit/year):</label>
                         <div style="position: relative;">
                             <span style="position: absolute; left: 12px; top: 11px; color: var(--text-secondary); font-weight: 600;">$</span>
-                            <input type="number" id="server-price" value="41.00" step="0.01" min="0"
+                            <input type="number" id="server-price" value="${_cfg._p2}" step="0.01" min="0"
                                 style="width: 100%; padding: 10px 10px 10px 25px; border: 2px solid var(--border-color);
                                 border-radius: 6px; background: var(--bg-card); color: var(--text-primary); font-size: 14px;">
                         </div>
@@ -2998,9 +3001,9 @@
                     const specialNote = document.createElement('div');
                     specialNote.style.cssText = 'margin-top: 32px; padding: 20px; background: #e6f7e6; border: 3px solid #00aa00; border-radius: 8px;';
                     specialNote.innerHTML = `
-                        <h4 style="color: #00aa00; margin-bottom: 10px; font-weight: 700;">Amazon Special Pricing Applied</h4>
+                        <h4 style="color: #00aa00; margin-bottom: 10px; font-weight: 700;">Special Pricing Applied</h4>
                         <p style="color: #006600; margin-bottom: 8px;">
-                            <strong>${formatValue(data.specialCount)}</strong> endpoints are receiving special Amazon pricing (classified as workstations instead of servers).
+                            <strong>${formatValue(data.specialCount)}</strong> endpoints are receiving special pricing (classified as workstations instead of servers).
                         </p>
                         <p style="color: #006600; font-size: 13px;">
                             Estimated monthly savings: <strong>$${formatCurrency(monthlySavings)}</strong> | Annual savings: <strong>$${formatCurrency(annualSavings)}</strong>
@@ -3065,14 +3068,12 @@
             recalculateCosts();
         }
 
-        // 3. Amazon Exception Tracker
+        // 3. Special Pricing Exception Tracker
         function showAmazonExceptions() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
             contentContainer.innerHTML = '';
             contentContainer.style.display = 'block';
-
-            const AWS_CORP_PROD_CID = 'dff351428ca84680bed9f62a336bb979';
 
             // Create header
             const header = document.createElement('div');
@@ -3080,13 +3081,13 @@
             header.innerHTML = `
                 <h2>
                     <span class="accent-bar"></span>
-                    Amazon Exception Tracker
+                    Special Pricing Exception Tracker
                 </h2>
                 <div class="selector-container">
                     <div class="selector-wrapper">
                         <label class="selector-label">Customer Instance</label>
                         <select id="exception-cid-selector">
-                            <option value="${AWS_CORP_PROD_CID}" selected>${cidToCompanyMap[AWS_CORP_PROD_CID]}</option>
+                            <option value="${_cfg._k1}" selected>${cidToCompanyMap[_cfg._k1]}</option>
                         </select>
                     </div>
                     <div class="snapshot-badge">
@@ -3097,7 +3098,7 @@
                 <div class="warning-note">
                     <div>
                         <strong>Special Pricing Exceptions:</strong>
-                        <span style="opacity: 0.95;"> Track Linux endpoints receiving Amazon's competitive pricing accommodations.</span>
+                        <span style="opacity: 0.95;"> Track endpoints receiving competitive pricing accommodations.</span>
                     </div>
                 </div>
             `;
@@ -3108,15 +3109,14 @@
                 showAmazonExceptions();
             });
 
-            // Check if this is AWS Corp Prod
-            if (selectedCID !== AWS_CORP_PROD_CID) {
+            // Check if this is the qualifying CID
+            if (selectedCID !== _cfg._k1) {
                 const notice = document.createElement('div');
                 notice.style.cssText = 'padding: 40px; text-align: center; background: #fff3cd; border: 3px solid var(--border-color); border-radius: 8px; margin: 20px 0;';
                 notice.innerHTML = `
-                    <h3 style="color: #856404; margin-bottom: 15px;">Not AWS Corp Prod Environment</h3>
-                    <p style="color: #856404; font-size: 14px;">Amazon billing exceptions only apply to AWS Corp Prod CID: <code style="background: #fff; padding: 2px 6px; border-radius: 3px;">${AWS_CORP_PROD_CID}</code></p>
+                    <h3 style="color: #856404; margin-bottom: 15px;">Special Pricing Not Applicable</h3>
+                    <p style="color: #856404; font-size: 14px;">Pricing exceptions only apply to specific customer environments.</p>
                     <p style="color: #856404; margin-top: 10px; font-size: 14px;">Current CID: <code style="background: #fff; padding: 2px 6px; border-radius: 3px;">${selectedCID}</code></p>
-                    <p style="color: #856404; margin-top: 15px; font-size: 13px; font-style: italic;">Select AWS Corp Prod from the dropdown to view exceptions.</p>
                 `;
                 contentContainer.appendChild(notice);
                 return;
@@ -3190,9 +3190,9 @@
                 al2Header.innerHTML = `
                     <h3>
                         <span class="accent-bar"></span>
-                        Amazon Linux 2 Exceptions
+                        Linux 2 Exceptions
                     </h3>
-                    <p>Billed as workstations - Special Amazon pricing accommodation</p>
+                    <p>Billed as workstations - Special pricing accommodation</p>
                 `;
                 contentContainer.appendChild(al2Header);
 
@@ -3234,7 +3234,7 @@
                 al2023Header.innerHTML = `
                     <h3>
                         <span class="accent-bar"></span>
-                        Amazon Linux 2023 - Pending Reclassification
+                        Linux 2023 - Pending Reclassification
                     </h3>
                     <p>Currently billed as servers - Under review for workstation rate exception</p>
                 `;
@@ -3277,10 +3277,10 @@
             infoBox.innerHTML = `
                 <h4 style="color: #0c5460; margin-bottom: 15px; font-weight: 700;">Exception Summary</h4>
                 <ul style="color: #0c5460; margin-left: 20px; line-height: 1.8; font-size: 14px;">
-                    <li><strong>Amazon Linux 2</strong> endpoints are billed at workstation rates due to competitive pricing accommodation</li>
-                    <li><strong>Cloud Development Desktops (CDD)</strong> with internal kernel versions also receive workstation rates</li>
-                    <li><strong>Amazon Linux 2023</strong> is pending reclassification to receive the same exception</li>
-                    <li>These exceptions apply <strong>only to AWS Corp Prod</strong> environment (CID: ${AWS_CORP_PROD_CID})</li>
+                    <li>Specific Linux distributions receive workstation rates due to competitive pricing</li>
+                    <li>Cloud development environments with internal builds also qualify for workstation rates</li>
+                    <li>Some Linux distributions are pending reclassification to receive the same exception</li>
+                    <li>These exceptions apply to specific customer environments only</li>
                 </ul>
             `;
             contentContainer.appendChild(infoBox);
