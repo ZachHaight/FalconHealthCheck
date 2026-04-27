@@ -4131,6 +4131,11 @@
         }
 
         // Setup event listeners for reporting page
+        /**
+         * Initialize event listeners for reporting page controls
+         * Sets up handlers for bulk export checkboxes, schedule configuration, and script download
+         * Loads existing schedules from localStorage
+         */
         function setupReportingEventListeners() {
             // Bulk export: Select all CIDs
             document.getElementById('bulk-select-all-cids').addEventListener('change', (e) => {
@@ -4172,6 +4177,14 @@
         }
 
         // Perform bulk export
+        /**
+         * Perform bulk export of selected worksheets for selected CIDs
+         * Creates a ZIP file containing CSV exports for all selected combinations
+         * Requires 'bulk_export' permission
+         *
+         * @async
+         * @throws {Error} If JSZip library is not loaded or export fails
+         */
         async function performBulkExport() {
             // Check permission
             if (!checkPermissionOrAlert('bulk_export', 'perform bulk exports')) return;
@@ -4273,6 +4286,16 @@
         }
 
         // Generate CSV content for a CID
+        /**
+         * Generate CSV content for a specific CID and worksheet
+         * Formats data with metadata header and appropriate structure based on data type
+         *
+         * @param {Object} cidData - Data for specific CID from worksheet
+         * @param {string} worksheetName - Name of worksheet being exported
+         * @param {string} cid - Customer identifier
+         * @param {string} snapshotDate - Date of health check snapshot
+         * @returns {string} CSV-formatted string ready for download
+         */
         function generateCSVContent(cidData, worksheetName, cid, snapshotDate) {
             let csvContent = '';
             const companyName = cidToCompanyMap[cid] || 'Unknown';
@@ -4314,6 +4337,11 @@
         }
 
         // Save schedule configuration
+        /**
+         * Save export schedule configuration to localStorage
+         * Stores frequency, scope, worksheet selection, and CID selection
+         * Displays alert confirmation and refreshes schedule list
+         */
         function saveSchedule() {
             const scheduleName = document.getElementById('schedule-name').value.trim();
             const frequency = document.getElementById('schedule-frequency').value;
@@ -4351,6 +4379,11 @@
         }
 
         // Load and display active schedules
+        /**
+         * Load configured schedules from localStorage and render in UI
+         * Displays schedule details including frequency, scope, and creation date
+         * Provides delete buttons for each schedule
+         */
         function loadActiveSchedules() {
             const schedulesContainer = document.getElementById('active-schedules');
             const schedules = JSON.parse(localStorage.getItem('falconSchedules') || '[]');
@@ -4385,6 +4418,12 @@
         }
 
         // Delete schedule
+        /**
+         * Delete a saved schedule configuration
+         * Prompts for confirmation before removing from localStorage
+         *
+         * @param {number} scheduleId - Unique identifier of schedule to delete
+         */
         function deleteSchedule(scheduleId) {
             if (!confirm('Are you sure you want to delete this schedule?')) return;
 
@@ -4395,6 +4434,11 @@
         }
 
         // Download automation script
+        /**
+         * Generate and download bash automation script template
+         * Creates shell script with instructions for automating exports
+         * Includes JavaScript code snippet for browser console execution
+         */
         function downloadAutomationScript() {
             const scriptContent = `#!/bin/bash
 # CrowdStrike Falcon Health Check - Automated Export Script
@@ -4470,6 +4514,13 @@ log "Export process completed"
         }
 
         // Show Comparison View
+        /**
+         * Display side-by-side comparison view for two CIDs
+         * Allows selection of snapshot date, worksheet, and two CIDs to compare
+         * Provides visual diff highlighting and delta calculations
+         * Supports CSV export of comparison results
+         * Requires 'comparison' permission
+         */
         function showComparison() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -4570,6 +4621,12 @@ log "Export process completed"
         }
 
         // Run comparison
+        /**
+         * Execute comparison between two selected CIDs
+         * Retrieves data from selected snapshot and worksheet
+         * Validates selection and renders comparison results
+         * Applies diff highlighting and delta calculations based on user preferences
+         */
         function runComparison() {
             const resultsContainer = document.getElementById('comparison-results');
             if (!resultsContainer) return;
@@ -4635,6 +4692,17 @@ log "Export process completed"
         }
 
         // Render comparison data
+        /**
+         * Render comparison data based on structure type
+         * Delegates to specialized renderers based on data format (simple vs complex)
+         * Filters out certain sensitive data fields and handles missing data gracefully
+         *
+         * @param {HTMLElement} container - Container element to append comparison to
+         * @param {Object} dataA - Data for first CID
+         * @param {Object} dataB - Data for second CID
+         * @param {boolean} highlightDiff - Whether to highlight differences
+         * @param {boolean} showDelta - Whether to show numeric deltas
+         */
         function renderComparisonData(container, dataA, dataB, highlightDiff, showDelta) {
             // Check data structure
             if (dataA.stats_data && Array.isArray(dataA.stats_data)) {
@@ -4681,6 +4749,16 @@ log "Export process completed"
         }
 
         // Render simple name-value comparison
+        /**
+         * Render comparison table for simple name-value pair data
+         * Creates side-by-side comparison with optional diff highlighting and deltas
+         *
+         * @param {HTMLElement} container - Container element to append table to
+         * @param {Array} dataA - Array of {name, value} objects for first CID
+         * @param {Array} dataB - Array of {name, value} objects for second CID
+         * @param {boolean} highlightDiff - Whether to highlight cells with different values
+         * @param {boolean} showDelta - Whether to display numeric change (delta) column
+         */
         function renderSimpleComparison(container, dataA, dataB, highlightDiff, showDelta) {
             const table = document.createElement('table');
             table.className = 'data-table';
@@ -4742,6 +4820,17 @@ log "Export process completed"
         }
 
         // Render complex data comparison
+        /**
+         * Render comparison table for complex structured data
+         * Matches records across datasets using unique identifiers (agent_version, toggle_name, platform)
+         * Creates multi-column comparison with side-by-side values
+         *
+         * @param {HTMLElement} container - Container element to append table to
+         * @param {Array} dataA - Array of complex objects for first CID
+         * @param {Array} dataB - Array of complex objects for second CID
+         * @param {boolean} highlightDiff - Whether to highlight cells with different values
+         * @param {boolean} showDelta - Whether to display numeric deltas (not used in complex comparison)
+         */
         function renderComplexComparison(container, dataA, dataB, highlightDiff, showDelta) {
             if (dataA.length === 0) return;
 
@@ -4850,6 +4939,11 @@ log "Export process completed"
         }
 
         // Export comparison
+        /**
+         * Export comparison results to CSV file
+         * Generates side-by-side comparison data with differences highlighted in CSV format
+         * Requires 'export' permission
+         */
         function exportComparison() {
             // Check permission
             if (!checkPermissionOrAlert('export', 'export comparison data')) return;
@@ -4923,6 +5017,12 @@ log "Export process completed"
         }
 
         // Show User Management View
+        /**
+         * Display user management interface
+         * Shows current session info, roles & permissions matrix, and demo user accounts
+         * Requires 'user_management' permission
+         * Provides detailed breakdown of RBAC permissions for all roles
+         */
         function showUserManagement() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -5084,6 +5184,10 @@ log "Export process completed"
         }
 
         // Render tabs
+        /**
+         * Render worksheet tabs in the tabs container
+         * Creates clickable tab buttons for each worksheet in loaded data
+         */
         function renderTabs() {
             const tabsContainer = document.getElementById('tabs');
             tabsContainer.innerHTML = '';
@@ -5099,6 +5203,12 @@ log "Export process completed"
         }
 
         // Switch worksheet
+        /**
+         * Switch to different worksheet view
+         * Updates active tab styling and triggers worksheet re-render
+         *
+         * @param {string} worksheetName - Name of worksheet to display
+         */
         function switchWorksheet(worksheetName) {
             currentWorksheet = worksheetName;
 
@@ -5111,6 +5221,12 @@ log "Export process completed"
         }
 
         // Render worksheet content
+        /**
+         * Render current worksheet data
+         * Creates date/CID selectors and renders data for each CID in the worksheet
+         * Supports delta indicators showing changes from previous snapshot
+         * Includes export functionality per worksheet
+         */
         function renderWorksheet() {
             const worksheet = fullData.find(w => w.worksheet_name === currentWorksheet);
             if (!worksheet) return;
@@ -5337,6 +5453,16 @@ log "Export process completed"
         }
 
         // Render CID data without accordion wrapper
+        /**
+         * Render data for a single CID
+         * Handles multiple data formats (simple name-value arrays, complex nested structures)
+         * Supports delta indicators for numeric values comparing to previous snapshot
+         * Filters out sensitive data fields and renders appropriate table structures
+         *
+         * @param {Object} cidData - Data for current CID from current snapshot
+         * @param {Object} [previousCIDData] - Data for same CID from previous snapshot (for delta calculation)
+         * @returns {HTMLElement} Container element with rendered data tables
+         */
         function renderCIDData(cidData, previousCIDData) {
             const container = document.createElement('div');
             container.style.cssText = 'margin-top: 20px;';
@@ -5476,6 +5602,15 @@ log "Export process completed"
         }
 
         // Export current sheet data to CSV
+        /**
+         * Export current worksheet data for selected CID to CSV file
+         * Generates CSV with metadata header and formatted data based on structure
+         * Filters sensitive data fields before export
+         * Requires 'export' permission
+         *
+         * @param {Object} cidData - Data for current CID to export
+         * @param {string} worksheetName - Name of worksheet being exported
+         */
         function exportToCSV(cidData, worksheetName) {
             // Check permission
             if (!checkPermissionOrAlert('export', 'export data')) return;
@@ -5559,6 +5694,11 @@ log "Export process completed"
 
         // Show trend modal
         let trendChart = null;
+        /**
+         * Display trend modal with chart showing metrics over time
+         * Creates Chart.js line chart for key metrics across all snapshots
+         * Destroys existing chart instance before creating new one
+         */
         function showTrendModal() {
             const modal = document.getElementById('trendModal');
             modal.style.display = 'block';
@@ -5618,11 +5758,20 @@ log "Export process completed"
         }
 
         // Close trend modal
+        /**
+         * Close the trend analysis modal
+         */
         function closeTrendModal() {
             document.getElementById('trendModal').style.display = 'none';
         }
 
         // Get key metrics based on worksheet
+        /**
+         * Get list of key metrics to track for trend analysis
+         * Returns worksheet-specific metric names based on current worksheet
+         *
+         * @returns {Array<string>} Array of metric names to track over time
+         */
         function getKeyMetrics() {
             const worksheet = currentWorksheet;
 
@@ -5649,6 +5798,16 @@ log "Export process completed"
         }
 
         // Build trend data
+        /**
+         * Build Chart.js dataset for trend visualization
+         * Aggregates metric values across all snapshots for selected CID
+         * Handles different data structures based on worksheet type
+         *
+         * @param {Array<string>} metrics - Array of metric names to track
+         * @returns {Object} Chart.js data object with labels and datasets
+         * @returns {Array<string>} returns.labels - Date labels for x-axis
+         * @returns {Array<Object>} returns.datasets - Chart.js dataset objects with metric data
+         */
         function buildTrendData(metrics) {
             const sortedFiles = Object.keys(allHealthChecks).sort((a, b) =>
                 allHealthChecks[a].date - allHealthChecks[b].date
@@ -5720,6 +5879,11 @@ log "Export process completed"
         initializeCategories();
 
         // Theme Toggle Functionality
+        /**
+         * Toggle between light and dark themes
+         * Persists theme choice to localStorage and updates UI
+         * Re-renders dashboard if currently displayed to update chart colors
+         */
         function toggleTheme() {
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
@@ -5739,6 +5903,11 @@ log "Export process completed"
         }
 
         // Initialize theme from localStorage or system preference
+        /**
+         * Initialize theme based on saved preference or system color scheme
+         * Checks localStorage first, falls back to system preference detection
+         * Sets theme attribute on document root and updates toggle button text
+         */
         function initializeTheme() {
             const savedTheme = localStorage.getItem('theme');
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
