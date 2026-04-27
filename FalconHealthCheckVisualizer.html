@@ -1837,6 +1837,132 @@
 
         // ==================== END UTILITY FUNCTIONS ====================
 
+        // ==================== ERROR HANDLING ====================
+
+        /**
+         * Display user-friendly error message
+         * Creates a dismissible notification that appears at the top of the screen
+         *
+         * @param {string} message - Error message to display to user
+         * @param {string} [type='error'] - Message type: 'error', 'warning', 'info', 'success'
+         * @param {number} [duration=0] - Auto-dismiss after milliseconds (0 = no auto-dismiss)
+         */
+        function showErrorMessage(message, type = 'error', duration = 0) {
+            // Remove any existing error messages
+            const existing = document.getElementById('global-error-message');
+            if (existing) {
+                existing.remove();
+            }
+
+            // Create error message container
+            const errorDiv = document.createElement('div');
+            errorDiv.id = 'global-error-message';
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 10000;
+                max-width: 600px;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 15px;
+                animation: slideDown 0.3s ease-out;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            `;
+
+            // Set colors based on type
+            const colors = {
+                error: { bg: '#dc3545', text: '#ffffff', icon: '⚠️' },
+                warning: { bg: '#ff9900', text: '#ffffff', icon: '⚠️' },
+                info: { bg: '#0066cc', text: '#ffffff', icon: 'ℹ️' },
+                success: { bg: '#00aa00', text: '#ffffff', icon: '✓' }
+            };
+            const color = colors[type] || colors.error;
+
+            errorDiv.style.backgroundColor = color.bg;
+            errorDiv.style.color = color.text;
+
+            // Message content
+            errorDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                    <span style="font-size: 24px;">${color.icon}</span>
+                    <span style="font-size: 14px; line-height: 1.5;">${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()"
+                        style="background: transparent; border: none; color: ${color.text};
+                               font-size: 24px; cursor: pointer; padding: 0; line-height: 1;
+                               opacity: 0.8; transition: opacity 0.2s;"
+                        onmouseover="this.style.opacity='1'"
+                        onmouseout="this.style.opacity='0.8'">×</button>
+            `;
+
+            // Add slide-down animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideDown {
+                    from { transform: translate(-50%, -100%); opacity: 0; }
+                    to { transform: translate(-50%, 0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            document.body.appendChild(errorDiv);
+
+            // Auto-dismiss if duration specified
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (errorDiv.parentElement) {
+                        errorDiv.remove();
+                    }
+                }, duration);
+            }
+        }
+
+        /**
+         * Check if required DOM element exists, show error if not
+         *
+         * @param {string} elementId - ID of element to check
+         * @param {string} context - Context for error message (e.g., "rendering dashboard")
+         * @returns {HTMLElement|null} Element if found, null otherwise
+         */
+        function requireElement(elementId, context) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.error(`Required element #${elementId} not found (${context})`);
+                showErrorMessage(`UI Error: Unable to display ${context}. Please refresh the page.`, 'error');
+                return null;
+            }
+            return element;
+        }
+
+        /**
+         * Safely execute function with error handling
+         * Catches errors and displays user-friendly message
+         *
+         * @param {Function} fn - Function to execute
+         * @param {string} context - Context description for error message
+         * @param {boolean} [showError=true] - Whether to show error message to user
+         * @returns {*} Function result or null on error
+         */
+        function safeExecute(fn, context, showError = true) {
+            try {
+                return fn();
+            } catch (error) {
+                console.error(`Error in ${context}:`, error);
+                if (showError) {
+                    showErrorMessage(`An error occurred while ${context}. Please try again or refresh the page.`, 'error');
+                }
+                return null;
+            }
+        }
+
+        // ==================== END ERROR HANDLING ====================
+
         // ========== CONFIGURATION ==========
         // Set DATA_SOURCE_URL to your S3 bucket URL or leave empty for local files
         // Example: 'https://your-bucket.s3.us-east-1.amazonaws.com/data/'
@@ -2010,30 +2136,81 @@
          * @throws {Error} If manifest or data files cannot be fetched
          */
         async function loadData() {
+            const loadingEl = requireElement('loading', 'data loading screen');
+            if (!loadingEl) return;
+
             try {
                 // Fetch list of health check files
                 const manifestUrl = DATA_SOURCE_URL ? `${DATA_SOURCE_URL}list_files.json` : 'list_files.json';
-                const filesResponse = await fetch(manifestUrl);
-                const filesList = await filesResponse.json();
+
+                let filesResponse;
+                try {
+                    filesResponse = await fetch(manifestUrl);
+                } catch (fetchError) {
+                    throw new Error(`Unable to fetch manifest file. Please check your internet connection or verify the file exists at: ${manifestUrl}`);
+                }
+
+                if (!filesResponse.ok) {
+                    throw new Error(`Failed to load manifest file (HTTP ${filesResponse.status}). Please ensure list_files.json exists and is accessible.`);
+                }
+
+                let filesList;
+                try {
+                    filesList = await filesResponse.json();
+                } catch (parseError) {
+                    throw new Error('Manifest file is not valid JSON. Please check the format of list_files.json.');
+                }
+
+                if (!filesList.files || !Array.isArray(filesList.files)) {
+                    throw new Error('Manifest file is missing "files" array. Expected format: {"files": ["file1.json", "file2.json"]}');
+                }
+
+                if (filesList.files.length === 0) {
+                    throw new Error('No health check files found in manifest. Please add JSON files to list_files.json.');
+                }
 
                 // Load all health check files
-                for (const filename of filesList.files) {
-                    const fileUrl = DATA_SOURCE_URL ? `${DATA_SOURCE_URL}${filename}` : filename;
-                    const response = await fetch(fileUrl);
-                    const data = await response.json();
-                    const date = extractDateFromFilename(filename);
+                let successCount = 0;
+                let failCount = 0;
 
-                    allHealthChecks[filename] = {
-                        date: date,
-                        data: data,
-                        displayDate: date.toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })
-                    };
+                for (const filename of filesList.files) {
+                    try {
+                        const fileUrl = DATA_SOURCE_URL ? `${DATA_SOURCE_URL}${filename}` : filename;
+                        const response = await fetch(fileUrl);
+
+                        if (!response.ok) {
+                            console.warn(`Skipping ${filename}: HTTP ${response.status}`);
+                            failCount++;
+                            continue;
+                        }
+
+                        const data = await response.json();
+                        const date = extractDateFromFilename(filename);
+
+                        allHealthChecks[filename] = {
+                            date: date,
+                            data: data,
+                            displayDate: date.toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })
+                        };
+                        successCount++;
+                    } catch (fileError) {
+                        console.error(`Error loading ${filename}:`, fileError);
+                        failCount++;
+                    }
+                }
+
+                if (successCount === 0) {
+                    throw new Error(`Failed to load any health check files. Attempted: ${filesList.files.length}, Failed: ${failCount}`);
+                }
+
+                if (failCount > 0) {
+                    showErrorMessage(`Loaded ${successCount} files successfully, but ${failCount} failed. Check console for details.`, 'warning', 5000);
                 }
 
                 // Sort by date and select most recent
@@ -2056,6 +2233,10 @@
                     });
                 }
 
+                if (Object.keys(cidToCompanyMap).length === 0) {
+                    throw new Error('No valid CID data found in health check files. Please verify file contents.');
+                }
+
                 // Set default CID to AWS Corporate Production
                 const targetCompany = CONSTANTS.DEFAULTS.COMPANY_NAME;
                 const defaultCID = Object.keys(cidToCompanyMap).find(cid =>
@@ -2063,12 +2244,16 @@
                 );
                 selectedCID = defaultCID || Object.keys(cidToCompanyMap)[0];
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('tabs-container').style.display = 'block';
+                const tabsContainer = requireElement('tabs-container', 'tabs');
+                const fileInfo = requireElement('file-info', 'file information');
+
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (tabsContainer) tabsContainer.style.display = 'block';
 
                 // Update file info
-                document.getElementById('file-info').textContent =
-                    `${Object.keys(cidToCompanyMap).length} CIDs | ${Object.keys(allHealthChecks).length} Snapshots`;
+                if (fileInfo) {
+                    fileInfo.textContent = `${Object.keys(cidToCompanyMap).length} CIDs | ${Object.keys(allHealthChecks).length} Snapshots`;
+                }
 
                 renderTabs();
 
@@ -3576,9 +3761,24 @@
          * @param {HTMLElement} container - Container element to append charts to
          * @param {Object} statsData - Stats worksheet data for current CID
          * @param {Object} detectionsData - Detections worksheet data for current CID (optional)
+         * @throws {Error} When Chart.js library is not loaded or canvas elements cannot be created
          */
         function renderDashboardCharts(container, statsData, detectionsData) {
             if (DEBUG_MODE) console.log('renderDashboardCharts called');
+
+            // Validate Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js library not loaded');
+                showErrorMessage('Visualization library not loaded. Charts cannot be displayed.', 'error');
+                return;
+            }
+
+            // Validate container
+            if (!container) {
+                console.error('Chart container element not provided');
+                showErrorMessage('Unable to render charts: container not found.', 'error');
+                return;
+            }
 
             // Create charts grid
             const chartsGrid = document.createElement('div');
@@ -3679,7 +3879,11 @@
                 if (deviceCanvas) {
             if (DEBUG_MODE) console.log('Creating device chart...');
                     try {
-                        dashboardCharts.devices = new Chart(deviceCanvas.getContext('2d'), {
+                        const ctx = deviceCanvas.getContext('2d');
+                        if (!ctx) {
+                            throw new Error('Unable to get 2D context from canvas');
+                        }
+                        dashboardCharts.devices = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: labels,
@@ -3730,9 +3934,11 @@
             if (DEBUG_MODE) console.log('Device chart created successfully');
                 } catch (error) {
                     console.error('Error creating device chart:', error);
+                    showErrorMessage('Unable to create device trends chart. Check console for details.', 'warning', 5000);
                 }
                 } else {
-                    console.error('Device canvas not found!');
+                    console.error('Device canvas element not found');
+                    showErrorMessage('Device chart canvas not found. Chart cannot be displayed.', 'warning', 5000);
                 }
 
                 // Chart 2: Detection Severity
@@ -3746,7 +3952,11 @@
                 if (detectionCanvas) {
             if (DEBUG_MODE) console.log('Creating detection chart...');
                     try {
-                        dashboardCharts.detections = new Chart(detectionCanvas.getContext('2d'), {
+                        const ctx = detectionCanvas.getContext('2d');
+                        if (!ctx) {
+                            throw new Error('Unable to get 2D context from canvas');
+                        }
+                        dashboardCharts.detections = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: labels,
@@ -3797,9 +4007,11 @@
             if (DEBUG_MODE) console.log('Detection chart created successfully');
                 } catch (error) {
                     console.error('Error creating detection chart:', error);
+                    showErrorMessage('Unable to create detection trends chart. Check console for details.', 'warning', 5000);
                 }
                 } else {
-                    console.error('Detection canvas not found!');
+                    console.error('Detection canvas element not found');
+                    showErrorMessage('Detection chart canvas not found. Chart cannot be displayed.', 'warning', 5000);
                 }
 
                 // Chart 3: Policy Scores
@@ -3813,7 +4025,11 @@
                 if (policyCanvas) {
             if (DEBUG_MODE) console.log('Creating policy chart...');
                     try {
-                        dashboardCharts.policy = new Chart(policyCanvas.getContext('2d'), {
+                        const ctx = policyCanvas.getContext('2d');
+                        if (!ctx) {
+                            throw new Error('Unable to get 2D context from canvas');
+                        }
+                        dashboardCharts.policy = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: labels,
@@ -3865,9 +4081,11 @@
             if (DEBUG_MODE) console.log('Policy chart created successfully');
                 } catch (error) {
                     console.error('Error creating policy chart:', error);
+                    showErrorMessage('Unable to create policy score chart. Check console for details.', 'warning', 5000);
                 }
                 } else {
-                    console.error('Policy canvas not found!');
+                    console.error('Policy canvas element not found');
+                    showErrorMessage('Policy chart canvas not found. Chart cannot be displayed.', 'warning', 5000);
                 }
 
                 // Chart 4: Platform Distribution
@@ -3881,7 +4099,11 @@
                 if (platformCanvas) {
             if (DEBUG_MODE) console.log('Creating platform chart...');
                     try {
-                        dashboardCharts.platform = new Chart(platformCanvas.getContext('2d'), {
+                        const ctx = platformCanvas.getContext('2d');
+                        if (!ctx) {
+                            throw new Error('Unable to get 2D context from canvas');
+                        }
+                        dashboardCharts.platform = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -3933,9 +4155,11 @@
             if (DEBUG_MODE) console.log('Platform chart created successfully');
                 } catch (error) {
                     console.error('Error creating platform chart:', error);
+                    showErrorMessage('Unable to create platform distribution chart. Check console for details.', 'warning', 5000);
                 }
                 } else {
-                    console.error('Platform canvas not found!');
+                    console.error('Platform canvas element not found');
+                    showErrorMessage('Platform chart canvas not found. Chart cannot be displayed.', 'warning', 5000);
                 }
                 });
             });
@@ -4188,15 +4412,26 @@
          * @async
          * @throws {Error} If JSZip library is not loaded or export fails
          */
+        /**
+         * Perform bulk export of multiple worksheets for multiple CIDs as a ZIP file
+         * Generates CSV files for each CID/worksheet combination and packages them in a ZIP
+         * Requires JSZip library - will load dynamically if not present
+         *
+         * @throws {Error} When required DOM elements are missing or export generation fails
+         */
         async function performBulkExport() {
             // Check permission
             if (!checkPermissionOrAlert('bulk_export', 'perform bulk exports')) return;
 
-            const statusEl = document.getElementById('bulk-export-status');
-            const btnEl = document.getElementById('bulk-export-btn');
+            const statusEl = requireElement('bulk-export-status', 'bulk export status');
+            const btnEl = requireElement('bulk-export-btn', 'bulk export button');
+            if (!statusEl || !btnEl) return;
 
             // Get selected options
-            const selectedDate = document.getElementById('bulk-date-selector').value;
+            const dateSelector = requireElement('bulk-date-selector', 'date selector');
+            if (!dateSelector) return;
+
+            const selectedDate = dateSelector.value;
             const selectedCIDs = Array.from(document.querySelectorAll('.bulk-cid-checkbox:checked')).map(cb => cb.value);
             const selectedSheets = Array.from(document.querySelectorAll('.bulk-sheet-checkbox:checked')).map(cb => cb.value);
 
@@ -4204,12 +4439,14 @@
             if (selectedCIDs.length === 0) {
                 statusEl.textContent = 'Please select at least one CID';
                 statusEl.style.color = '#dc3545';
+                showErrorMessage('Please select at least one CID for bulk export.', 'warning', 3000);
                 return;
             }
 
             if (selectedSheets.length === 0) {
                 statusEl.textContent = 'Please select at least one data sheet';
                 statusEl.style.color = '#dc3545';
+                showErrorMessage('Please select at least one data sheet for bulk export.', 'warning', 3000);
                 return;
             }
 
@@ -4224,10 +4461,18 @@
             try {
                 // Import JSZip library dynamically
                 if (typeof JSZip === 'undefined') {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-                    document.head.appendChild(script);
-                    await new Promise((resolve) => { script.onload = resolve; });
+                    statusEl.textContent = 'Loading export library...';
+                    try {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                        document.head.appendChild(script);
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = () => reject(new Error('Failed to load JSZip library'));
+                        });
+                    } catch (libError) {
+                        throw new Error('Unable to load export library. Please check your internet connection.');
+                    }
                 }
 
                 const zip = new JSZip();
@@ -4259,7 +4504,12 @@
                     }
                 }
 
+                if (fileCount === 0) {
+                    throw new Error('No data found for the selected CIDs and worksheets.');
+                }
+
                 // Generate ZIP file
+                statusEl.textContent = 'Packaging files...';
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
 
                 // Download ZIP
@@ -4275,11 +4525,13 @@
 
                 statusEl.textContent = `Successfully exported ${fileCount} files!`;
                 statusEl.style.color = '#00aa00';
+                showErrorMessage(`Bulk export complete: ${fileCount} files downloaded.`, 'success', 5000);
 
             } catch (error) {
                 console.error('Bulk export error:', error);
                 statusEl.textContent = `Export failed: ${error.message}`;
                 statusEl.style.color = '#dc3545';
+                showErrorMessage(`Bulk export failed: ${error.message}`, 'error');
             } finally {
                 // Re-enable button
                 btnEl.disabled = false;
@@ -4629,18 +4881,29 @@ log "Export process completed"
          * Retrieves data from selected snapshot and worksheet
          * Validates selection and renders comparison results
          * Applies diff highlighting and delta calculations based on user preferences
+         *
+         * @throws {Error} When required DOM elements are missing or data cannot be retrieved
          */
         function runComparison() {
-            const resultsContainer = document.getElementById('comparison-results');
+            const resultsContainer = requireElement('comparison-results', 'comparison results');
             if (!resultsContainer) return;
 
-            // Get selections
-            const selectedDate = document.getElementById('compare-date-selector').value;
-            const selectedSheet = document.getElementById('compare-sheet-selector').value;
-            const cidA = document.getElementById('compare-cid-a').value;
-            const cidB = document.getElementById('compare-cid-b').value;
-            const highlightDiff = document.getElementById('compare-highlight-diff').checked;
-            const showDelta = document.getElementById('compare-show-delta').checked;
+            // Get selections - validate each element exists
+            const dateSelector = requireElement('compare-date-selector', 'date selector');
+            const sheetSelector = requireElement('compare-sheet-selector', 'sheet selector');
+            const cidASelector = requireElement('compare-cid-a', 'CID A selector');
+            const cidBSelector = requireElement('compare-cid-b', 'CID B selector');
+            const highlightCheckbox = document.getElementById('compare-highlight-diff');
+            const deltaCheckbox = document.getElementById('compare-show-delta');
+
+            if (!dateSelector || !sheetSelector || !cidASelector || !cidBSelector) return;
+
+            const selectedDate = dateSelector.value;
+            const selectedSheet = sheetSelector.value;
+            const cidA = cidASelector.value;
+            const cidB = cidBSelector.value;
+            const highlightDiff = highlightCheckbox ? highlightCheckbox.checked : false;
+            const showDelta = deltaCheckbox ? deltaCheckbox.checked : false;
 
             // Validation
             if (cidA === cidB) {
@@ -4654,11 +4917,20 @@ log "Export process completed"
             }
 
             // Get data
-            const snapshotData = allHealthChecks[selectedDate].data;
+            const snapshotData = allHealthChecks[selectedDate] ? allHealthChecks[selectedDate].data : null;
+            if (!snapshotData) {
+                resultsContainer.innerHTML = '<p style="color: #dc3545;">Snapshot data not found</p>';
+                console.error('Snapshot data not found for date:', selectedDate);
+                showErrorMessage('Snapshot data not available for selected date.', 'error');
+                return;
+            }
+
             const worksheet = snapshotData.find(w => w.worksheet_name === selectedSheet);
 
             if (!worksheet) {
                 resultsContainer.innerHTML = '<p style="color: #dc3545;">Worksheet not found</p>';
+                console.error('Worksheet not found:', selectedSheet);
+                showErrorMessage('Selected worksheet not found in snapshot data.', 'error');
                 return;
             }
 
@@ -4667,6 +4939,8 @@ log "Export process completed"
 
             if (!dataA || !dataB) {
                 resultsContainer.innerHTML = '<p style="color: #dc3545;">Data not found for selected CIDs</p>';
+                console.error('CID data not found - A:', !!dataA, 'B:', !!dataB);
+                showErrorMessage('Data not found for one or both selected CIDs.', 'error');
                 return;
             }
 
@@ -5190,10 +5464,20 @@ log "Export process completed"
         /**
          * Render worksheet tabs in the tabs container
          * Creates clickable tab buttons for each worksheet in loaded data
+         *
+         * @throws {Error} When tabs container element is missing
          */
         function renderTabs() {
-            const tabsContainer = document.getElementById('tabs');
+            const tabsContainer = requireElement('tabs', 'tabs container');
+            if (!tabsContainer) return;
+
             tabsContainer.innerHTML = '';
+
+            if (!fullData || fullData.length === 0) {
+                console.error('No worksheet data available to render tabs');
+                showErrorMessage('No worksheets available. Please load data first.', 'warning');
+                return;
+            }
 
             fullData.forEach(worksheet => {
                 const tab = document.createElement('button');
