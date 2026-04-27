@@ -1522,6 +1522,13 @@
         let currentUser = null;
 
         // Initialize RBAC on page load
+        /**
+         * Initialize Role-Based Access Control system
+         * Checks for existing session in localStorage and validates expiration
+         * Shows login modal if no valid session exists
+         *
+         * @returns {boolean} True if valid session exists, false otherwise
+         */
         function initRBAC() {
             // Check for existing session
             const sessionData = localStorage.getItem('falconSession');
@@ -1530,7 +1537,7 @@
                     currentUser = JSON.parse(sessionData);
                     // Validate session hasn't expired (24 hour expiry)
                     const sessionAge = Date.now() - currentUser.loginTime;
-                    if (sessionAge > 24 * 60 * 60 * 1000) {
+                    if (sessionAge > CONSTANTS.SESSION.TIMEOUT_MS) {
                         handleLogout();
                         return false;
                     }
@@ -1547,6 +1554,12 @@
         }
 
         // Handle login
+        /**
+         * Handle user login form submission
+         * Validates credentials against DEMO_USERS, creates session, and initializes data
+         *
+         * @param {Event} event - Form submit event
+         */
         function handleLogin(event) {
             event.preventDefault();
 
@@ -1583,6 +1596,10 @@
         }
 
         // Handle logout
+        /**
+         * Handle user logout with confirmation
+         * Clears session data and reloads page to return to login screen
+         */
         function handleLogout() {
             if (confirm('Are you sure you want to logout?')) {
                 currentUser = null;
@@ -1592,15 +1609,25 @@
         }
 
         // Show/hide login modal
+        /**
+         * Display the login modal to the user
+         */
         function showLoginModal() {
             document.getElementById('loginModal').classList.add('show');
         }
 
+        /**
+         * Hide the login modal from view
+         */
         function hideLoginModal() {
             document.getElementById('loginModal').classList.remove('show');
         }
 
         // Show user badge
+        /**
+         * Display user information badge in header
+         * Shows full name and role from current session
+         */
         function showUserBadge() {
             if (!currentUser) return;
 
@@ -1610,12 +1637,22 @@
         }
 
         // Check if user has permission
+        /**
+         * Check if current user has a specific permission
+         *
+         * @param {string} permission - Permission name to check (e.g., 'view', 'export', 'admin')
+         * @returns {boolean} True if user has permission, false otherwise
+         */
         function hasPermission(permission) {
             if (!currentUser) return false;
             return currentUser.permissions.includes(permission);
         }
 
         // Apply permissions to UI elements
+        /**
+         * Apply role-based permissions to UI elements
+         * Hides navigation items and disables features based on current user permissions
+         */
         function applyPermissions() {
             if (!currentUser) return;
 
@@ -1645,6 +1682,10 @@
         }
 
         // Disable export buttons based on permissions
+        /**
+         * Disable export functionality for users without export permission
+         * Adds visual indicators and tooltips to restricted buttons
+         */
         function disableExportButtonsIfNeeded() {
             if (!hasPermission('export')) {
                 // Disable all export buttons
@@ -1658,6 +1699,13 @@
         }
 
         // Check permission before action
+        /**
+         * Check if user has permission for an action and show alert if denied
+         *
+         * @param {string} permission - Required permission name
+         * @param {string} actionName - User-friendly action description for alert message
+         * @returns {boolean} True if permission granted, false if denied
+         */
         function checkPermissionOrAlert(permission, actionName) {
             if (!hasPermission(permission)) {
                 alert(`Access Denied\n\nYou do not have permission to ${actionName}.\n\nYour role: ${ROLES[currentUser.role].name}\nRequired permission: ${permission}`);
@@ -1667,6 +1715,127 @@
         }
 
         // ==================== END RBAC SYSTEM ====================
+
+        // ==================== CONSTANTS ====================
+        /**
+         * Application-wide constants and configuration values.
+         * Centralizes all hard-coded values for easier maintenance and updates.
+         */
+        const CONSTANTS = {
+            // Worksheet names used throughout the application
+            WORKSHEETS: {
+                STATS: 'stats',
+                SENSOR_UPDATES: 'sensor_updates',
+                DETECTIONS: 'detections',
+                OS_VERSIONS: 'os_versions',
+                AGENT_VERSIONS: 'agent_versions',
+                SSL_CERT: 'ssl_cert_rollover_2026_versions',
+                POLICY_SCORES: 'policy_scores',
+                PREVENTION_TOGGLES: 'prevention_toggles',
+                FEATURES: 'features',
+                METERED_NG: 'metered_ng'
+            },
+
+            // Session configuration
+            SESSION: {
+                TIMEOUT_MS: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+                STORAGE_KEY: 'falconSession'
+            },
+
+            // Theme values
+            THEME: {
+                LIGHT: 'light',
+                DARK: 'dark',
+                STORAGE_KEY: 'falconTheme'
+            },
+
+            // Chart colors (CrowdStrike branding)
+            COLORS: {
+                PRIMARY: '#cc0000',      // CrowdStrike red
+                SUCCESS: '#00aa00',      // Green for positive metrics
+                WARNING: '#ff9900',      // Orange for warnings
+                DANGER: '#dc3545',       // Red for errors
+                INFO: '#0066cc',         // Blue for info
+                NEUTRAL: '#6c757d',      // Gray for neutral
+                CHART_TEXT_LIGHT: '#334155',
+                CHART_TEXT_DARK: '#e2e8f0',
+                CHART_GRID_LIGHT: '#e2e8f0',
+                CHART_GRID_DARK: '#334155'
+            },
+
+            // Default values
+            DEFAULTS: {
+                COMPANY_NAME: 'AWS Corporate Production - PROD/AWS - Amazon',
+                VIEW: 'dashboard'
+            },
+
+            // Pricing tiers (annual per-unit)
+            PRICING: {
+                WORKSTATION_ANNUAL: 36.35,
+                SERVER_ANNUAL: 41.00
+            }
+        };
+
+        // ==================== END CONSTANTS ====================
+
+        // ==================== UTILITY FUNCTIONS ====================
+
+        /**
+         * Escape CSV field value by wrapping in quotes and escaping internal quotes
+         * Handles commas, quotes, and newlines within field values
+         *
+         * @param {*} value - Value to escape for CSV format
+         * @returns {string} Escaped CSV field value
+         */
+        function escapeCSV(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            const stringValue = String(value);
+            // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+        }
+
+        /**
+         * Format numeric value with locale-specific thousands separators
+         * Handles null/undefined and returns appropriate display value
+         *
+         * @param {*} value - Value to format (number, object, or other)
+         * @returns {string} Formatted value string or 'N/A' for null/undefined
+         */
+        function formatValue(value) {
+            if (value === null || value === undefined) {
+                return 'N/A';
+            }
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'number') {
+                // If it's a whole number, use toLocaleString without decimals
+                if (Number.isInteger(value)) {
+                    return value.toLocaleString();
+                }
+                // For decimals, show 2 decimal places
+                return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            return String(value);
+        }
+
+        /**
+         * Format currency value with dollar sign and two decimal places
+         * Uses locale-specific formatting with thousands separators
+         *
+         * @param {number} value - Numeric currency value
+         * @returns {string} Formatted currency string (e.g., "$1,234.56")
+         */
+        function formatCurrency(value) {
+            return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ==================== END UTILITY FUNCTIONS ====================
 
         // ========== CONFIGURATION ==========
         // Set DATA_SOURCE_URL to your S3 bucket URL or leave empty for local files
@@ -1700,6 +1869,12 @@
         };
 
         // Navigate to different views
+        /**
+         * Navigate to a specific view and update UI state
+         * Updates active navigation item and expands parent categories as needed
+         *
+         * @param {string} view - View identifier (e.g., 'dashboard', 'reporting', 'comparison', or worksheet name)
+         */
         function navigateTo(view) {
             currentView = view;
 
@@ -1753,12 +1928,20 @@
         }
 
         // Toggle sidebar
+        /**
+         * Toggle sidebar visibility between expanded and collapsed states
+         */
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('collapsed');
         }
 
         // Toggle category expand/collapse
+        /**
+         * Toggle navigation category expansion state
+         *
+         * @param {string} categoryId - ID of the category body element to toggle
+         */
         function toggleCategory(categoryId) {
             const categoryBody = document.getElementById(categoryId);
             const categoryHeader = event.target.closest('.nav-category-header');
@@ -1771,6 +1954,10 @@
         }
 
         // Initialize categories - collapsed by default
+        /**
+         * Initialize all navigation categories to collapsed state
+         * Called on page load to ensure consistent initial UI state
+         */
         function initializeCategories() {
             document.querySelectorAll('.nav-category-body').forEach(body => {
                 body.classList.add('collapsed');
@@ -1781,11 +1968,24 @@
         }
 
         // Get display name for worksheet
+        /**
+         * Get user-friendly display name for a worksheet
+         *
+         * @param {string} worksheetName - Internal worksheet identifier
+         * @returns {string} User-friendly worksheet display name
+         */
         function getWorksheetDisplayName(worksheetName) {
             return worksheetDisplayNames[worksheetName] || worksheetName;
         }
 
         // Extract date from filename
+        /**
+         * Extract date and time from Falcon health check filename
+         * Expects format: Falcon_Health_Check_Stats_YYYY-MM-DD_HH-MM-SS.json
+         *
+         * @param {string} filename - Health check filename
+         * @returns {Date} Parsed date object, or current date if parsing fails
+         */
         function extractDateFromFilename(filename) {
             const match = filename.match(/(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})/);
             if (match) {
@@ -1798,6 +1998,14 @@
         }
 
         // Load JSON data
+        /**
+         * Load all health check JSON files from data source
+         * Fetches manifest file listing all available health checks, then loads each file
+         * Populates global state with health check data and company mappings
+         *
+         * @async
+         * @throws {Error} If manifest or data files cannot be fetched
+         */
         async function loadData() {
             try {
                 // Fetch list of health check files
@@ -1833,7 +2041,7 @@
                 fullData = allHealthChecks[currentHealthCheckFile].data;
 
                 // Build CID to Company name mapping from stats worksheet
-                const statsWorksheet = fullData.find(w => w.worksheet_name === 'stats');
+                const statsWorksheet = fullData.find(w => w.worksheet_name === CONSTANTS.WORKSHEETS.STATS);
                 if (statsWorksheet && statsWorksheet.worksheet_data) {
                     statsWorksheet.worksheet_data.forEach(cidData => {
                         if (cidData.stats_data) {
@@ -1846,7 +2054,7 @@
                 }
 
                 // Set default CID to AWS Corporate Production
-                const targetCompany = 'AWS Corporate Production - PROD/AWS - Amazon';
+                const targetCompany = CONSTANTS.DEFAULTS.COMPANY_NAME;
                 const defaultCID = Object.keys(cidToCompanyMap).find(cid =>
                     cidToCompanyMap[cid] === targetCompany
                 );
@@ -1870,6 +2078,11 @@
         }
 
         // Show Dashboard
+        /**
+         * Display main dashboard view with key metrics and visualizations
+         * Loads stats, detections, and policy score data for selected CID
+         * Renders summary cards and charts for sensor health, detections, and policy compliance
+         */
         function showDashboard() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -2013,6 +2226,11 @@
         }
 
         // Show Consumption Billing
+        /**
+         * Display consumption-based billing metrics view
+         * Shows metered usage data and cloud billing estimations for selected CID
+         * Includes interactive pricing configuration and usage visualization charts
+         */
         function showConsumptionBilling() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -2022,7 +2240,7 @@
             if (!selectedCID) return;
 
             // Get metered_ng worksheet data
-            const meteredWorksheet = fullData.find(w => w.worksheet_name === 'metered_ng');
+            const meteredWorksheet = fullData.find(w => w.worksheet_name === CONSTANTS.WORKSHEETS.METERED_NG);
 
             if (!meteredWorksheet) {
                 contentContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-secondary);">No consumption billing data available.</div>';
@@ -2430,6 +2648,13 @@
         }
 
         // Render consumption billing charts
+        /**
+         * Render consumption billing trend charts
+         * Creates line chart showing metered usage over time across all snapshots
+         *
+         * @param {HTMLElement} container - Container element to append charts to
+         * @param {Object} meteredData - Metered usage data for current CID
+         */
         function renderConsumptionCharts(container, meteredData) {
             const chartsGrid = document.createElement('div');
             chartsGrid.className = 'dashboard-charts-grid';
@@ -2556,24 +2781,57 @@
         }
 
         // Helper function to get chart text color based on current theme
+        /**
+         * Get text color for chart elements based on current theme
+         *
+         * @returns {string} Color value for chart text in current theme
+         */
         function getChartTextColor() {
             const theme = document.documentElement.getAttribute('data-theme');
-            return theme === 'dark' ? '#e2e8f0' : '#334155';
+            return theme === CONSTANTS.THEME.DARK ? CONSTANTS.COLORS.CHART_TEXT_DARK : CONSTANTS.COLORS.CHART_TEXT_LIGHT;
         }
 
         // Helper function to get chart grid color based on current theme
+        /**
+         * Get grid line color for charts based on current theme
+         *
+         * @returns {string} Color value for chart grid lines in current theme
+         */
         function getChartGridColor() {
             const theme = document.documentElement.getAttribute('data-theme');
-            return theme === 'dark' ? '#334155' : '#e2e8f0';
+            return theme === CONSTANTS.THEME.DARK ? CONSTANTS.COLORS.CHART_GRID_DARK : CONSTANTS.COLORS.CHART_GRID_LIGHT;
         }
 
         // ==================== BILLING CALCULATORS ====================
 
         // Decode configuration
+        /**
+         * Decode base64-encoded configuration string
+         * Used for obfuscating sensitive configuration values
+         *
+         * @param {string} s - Base64-encoded string
+         * @returns {string} Decoded string
+         */
         function _dc(s) { return atob(s); }
-        const _cfg = { _k1: _dc('ZGZmMzUxNDI4Y2E4NDY4MGJlZDlmNjJhMzM2YmI5Nzk='), _p1: 36.35, _p2: 41.00 };
+        const _cfg = {
+            _k1: _dc('ZGZmMzUxNDI4Y2E4NDY4MGJlZDlmNjJhMzM2YmI5Nzk='),
+            _p1: CONSTANTS.PRICING.WORKSTATION_ANNUAL,
+            _p2: CONSTANTS.PRICING.SERVER_ANNUAL
+        };
 
         // Helper function to classify OS based on billing logic
+        /**
+         * Classify operating system for billing purposes
+         * Determines if OS should be billed as workstation or server based on OS name and CID
+         * Includes special handling for AWS Corporate Production CID exceptions
+         *
+         * @param {string} osName - Operating system name from health check data
+         * @param {string} cid - Customer identifier
+         * @returns {Object} Classification result
+         * @returns {string} returns.type - 'Workstation' or 'Server'
+         * @returns {string} returns.category - OS category (e.g., 'Windows Client', 'Linux')
+         * @returns {boolean} returns.special - True if AWS Corporate Production exception applies
+         */
         function classifyOSForBilling(osName, cid) {
             const isAWSCorpProd = cid === _cfg._k1;
 
@@ -2625,6 +2883,12 @@
         }
 
         // 1. Billing Classification
+        /**
+         * Display billing classification view
+         * Shows endpoint classification (workstation vs server) for billing purposes
+         * Applies business logic to classify OS versions and calculate endpoint counts
+         * Highlights special billing rules for specific customer instances
+         */
         function showBillingClassifier() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -2634,7 +2898,7 @@
             if (!selectedCID) return;
 
             // Get OS versions data
-            const osWorksheet = fullData.find(w => w.worksheet_name === 'os_versions');
+            const osWorksheet = fullData.find(w => w.worksheet_name === CONSTANTS.WORKSHEETS.OS_VERSIONS);
 
             if (!osWorksheet) {
                 contentContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-secondary);">No OS version data available.</div>';
@@ -2805,6 +3069,12 @@
         }
 
         // 2. EPP Cost Calculator
+        /**
+         * Display Endpoint Protection Platform (EPP) cost estimator
+         * Calculates monthly and annual costs based on endpoint classification and pricing
+         * Provides interactive pricing inputs and detailed cost breakdown
+         * Shows classification of endpoints by OS type
+         */
         function showCostEstimator() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -2850,7 +3120,7 @@
             });
 
             // Get OS data and classify
-            const osWorksheet = fullData.find(w => w.worksheet_name === 'os_versions');
+            const osWorksheet = fullData.find(w => w.worksheet_name === CONSTANTS.WORKSHEETS.OS_VERSIONS);
 
             if (!osWorksheet) {
                 contentContainer.innerHTML += '<div style="padding: 40px; text-align: center; color: var(--text-secondary);">No OS data available.</div>';
@@ -3069,6 +3339,12 @@
         }
 
         // 3. Special Pricing Exception Tracker
+        /**
+         * Display special pricing exception tracker for specific customers
+         * Identifies endpoints that receive special billing treatment
+         * Shows impact on billing classification and potential cost differences
+         * Only applicable to customers with configured pricing exceptions
+         */
         function showAmazonExceptions() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -3123,7 +3399,7 @@
             }
 
             // Get OS data
-            const osWorksheet = fullData.find(w => w.worksheet_name === 'os_versions');
+            const osWorksheet = fullData.find(w => w.worksheet_name === CONSTANTS.WORKSHEETS.OS_VERSIONS);
 
             if (!osWorksheet) {
                 contentContainer.innerHTML += '<div style="padding: 40px; text-align: center; color: var(--text-secondary);">No OS data available.</div>';
@@ -3289,6 +3565,15 @@
         // ==================== END BILLING CALCULATORS ====================
 
         // Render dashboard charts
+        /**
+         * Render dashboard trend charts showing key metrics over time
+         * Creates multiple Chart.js line charts for device counts, sensor health, and detections
+         * Data is aggregated across all snapshots for the selected CID
+         *
+         * @param {HTMLElement} container - Container element to append charts to
+         * @param {Object} statsData - Stats worksheet data for current CID
+         * @param {Object} detectionsData - Detections worksheet data for current CID (optional)
+         */
         function renderDashboardCharts(container, statsData, detectionsData) {
             console.log('renderDashboardCharts called');
 
@@ -3654,6 +3939,9 @@
         }
 
         // Hide tabs
+        /**
+         * Hide worksheet tabs and show tabs container
+         */
         function hideTabs() {
             document.getElementById('tabs-container').style.display = 'block';
             const tabsContainer = document.getElementById('tabs');
@@ -3661,6 +3949,11 @@
         }
 
         // Show Reporting Page
+        /**
+         * Display advanced reporting page with bulk export and scheduling features
+         * Provides tools for exporting multiple worksheets and configuring automated reports
+         * Requires 'reporting' permission to access
+         */
         function showReporting() {
             document.getElementById('tabs-container').style.display = 'none';
             const contentContainer = document.getElementById('content');
@@ -3984,15 +4277,6 @@
             let csvContent = '';
             const companyName = cidToCompanyMap[cid] || 'Unknown';
             const worksheetDisplayName = getWorksheetDisplayName(worksheetName);
-
-            const escapeCSV = (value) => {
-                if (value === null || value === undefined) return '';
-                const stringValue = String(value);
-                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                    return `"${stringValue.replace(/"/g, '""')}"`;
-                }
-                return stringValue;
-            };
 
             // Add metadata header
             csvContent += `CrowdStrike Falcon Health Check Export\n`;
@@ -4600,15 +4884,6 @@ log "Export process completed"
             csvContent += `Export Date,${new Date().toLocaleString()}\n`;
             csvContent += `\n`;
 
-            const escapeCSV = (value) => {
-                if (value === null || value === undefined) return '';
-                const stringValue = String(value);
-                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                    return `"${stringValue.replace(/"/g, '""')}"`;
-                }
-                return stringValue;
-            };
-
             // Export based on structure
             if (dataA.stats_data && Array.isArray(dataA.stats_data)) {
                 csvContent += 'Metric,CID A Value,CID B Value,Delta\n';
@@ -5200,16 +5475,6 @@ log "Export process completed"
             return container;
         }
 
-        // Format value for display
-        function formatValue(value) {
-            if (value === null || value === undefined) return 'N/A';
-            if (typeof value === 'object') return JSON.stringify(value);
-            if (typeof value === 'number') {
-                return value.toLocaleString();
-            }
-            return value;
-        }
-
         // Export current sheet data to CSV
         function exportToCSV(cidData, worksheetName) {
             // Check permission
@@ -5224,17 +5489,6 @@ log "Export process completed"
             const companyName = cidToCompanyMap[selectedCID] || 'Unknown';
             const timestamp = allHealthChecks[currentHealthCheckFile].displayDate;
             const worksheetDisplayName = getWorksheetDisplayName(worksheetName);
-
-            // Helper function to escape CSV values
-            const escapeCSV = (value) => {
-                if (value === null || value === undefined) return '';
-                const stringValue = String(value);
-                // If value contains comma, quote, or newline, wrap in quotes and escape quotes
-                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                    return `"${stringValue.replace(/"/g, '""')}"`;
-                }
-                return stringValue;
-            };
 
             // Add metadata header
             csvContent += `CrowdStrike Falcon Health Check Export\n`;
