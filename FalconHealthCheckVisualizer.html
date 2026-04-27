@@ -1545,7 +1545,7 @@
                     hideLoginModal();
                     applyPermissions();
                     return true;
-                } catch (e) {
+                } catch (error) {
                     localStorage.removeItem('falconSession');
                 }
             }
@@ -2815,11 +2815,11 @@
          * @param {string} s - Base64-encoded string
          * @returns {string} Decoded string
          */
-        function _dc(s) { return atob(s); }
-        const _cfg = {
-            _k1: _dc('ZGZmMzUxNDI4Y2E4NDY4MGJlZDlmNjJhMzM2YmI5Nzk='),
-            _p1: CONSTANTS.PRICING.WORKSTATION_ANNUAL,
-            _p2: CONSTANTS.PRICING.SERVER_ANNUAL
+        function decodeConfig(s) { return atob(s); }
+        const PRICING_CONFIG = {
+            specialCustomerId: decodeConfig('ZGZmMzUxNDI4Y2E4NDY4MGJlZDlmNjJhMzM2YmI5Nzk='),
+            workstationPrice: CONSTANTS.PRICING.WORKSTATION_ANNUAL,
+            serverPrice: CONSTANTS.PRICING.SERVER_ANNUAL
         };
 
         // Helper function to classify OS based on billing logic
@@ -2836,7 +2836,7 @@
          * @returns {boolean} returns.special - True if AWS Corporate Production exception applies
          */
         function classifyOSForBilling(osName, cid) {
-            const isAWSCorpProd = cid === _cfg._k1;
+            const isAWSCorpProd = cid === PRICING_CONFIG.specialCustomerId;
 
             // Normalize OS name
             const os = osName.toLowerCase();
@@ -3366,7 +3366,7 @@
                     <div class="selector-wrapper">
                         <label class="selector-label">Customer Instance</label>
                         <select id="exception-cid-selector">
-                            <option value="${_cfg._k1}" selected>${cidToCompanyMap[_cfg._k1]}</option>
+                            <option value="${PRICING_CONFIG.specialCustomerId}" selected>${cidToCompanyMap[PRICING_CONFIG.specialCustomerId]}</option>
                         </select>
                     </div>
                     <div class="snapshot-badge">
@@ -3389,7 +3389,7 @@
             });
 
             // Check if this is the qualifying CID
-            if (selectedCID !== _cfg._k1) {
+            if (selectedCID !== PRICING_CONFIG.specialCustomerId) {
                 const notice = document.createElement('div');
                 notice.style.cssText = 'padding: 40px; text-align: center; background: #fff3cd; border: 3px solid var(--border-color); border-radius: 8px; margin: 20px 0;';
                 notice.innerHTML = `
