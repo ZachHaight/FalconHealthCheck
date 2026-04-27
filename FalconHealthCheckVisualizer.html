@@ -1841,6 +1841,9 @@
         // Set DATA_SOURCE_URL to your S3 bucket URL or leave empty for local files
         // Example: 'https://your-bucket.s3.us-east-1.amazonaws.com/data/'
         const DATA_SOURCE_URL = '';
+
+        // Debug mode - set to true to enable verbose console logging
+        const DEBUG_MODE = false;
         // ===================================
 
         let allHealthChecks = {}; // {filename: {date, data}}
@@ -3575,7 +3578,7 @@
          * @param {Object} detectionsData - Detections worksheet data for current CID (optional)
          */
         function renderDashboardCharts(container, statsData, detectionsData) {
-            console.log('renderDashboardCharts called');
+            if (DEBUG_MODE) console.log('renderDashboardCharts called');
 
             // Create charts grid
             const chartsGrid = document.createElement('div');
@@ -3586,8 +3589,8 @@
             );
             const labels = sortedFiles.map(f => allHealthChecks[f].displayDate);
 
-            console.log('Chart labels:', labels);
-            console.log('Selected CID:', selectedCID);
+            if (DEBUG_MODE) console.log('Chart labels:', labels);
+            if (DEBUG_MODE) console.log('Selected CID:', selectedCID);
 
             // Helper function to create chart container
             const createChartContainer = (id, title) => {
@@ -3630,18 +3633,18 @@
             chartsGrid.appendChild(platformChart);
 
             container.appendChild(chartsGrid);
-            console.log('Charts grid appended to container');
-            console.log('Container children count:', container.children.length);
+            if (DEBUG_MODE) console.log('Charts grid appended to container');
+            if (DEBUG_MODE) console.log('Container children count:', container.children.length);
 
             // Wait for layout to be fully calculated
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    console.log('requestAnimationFrame fired - checking for canvas elements');
-                    console.log('Chart.js available?', typeof Chart !== 'undefined');
-                    console.log('deviceCanvas exists?', document.getElementById('dashboardDeviceChart'));
-                    console.log('detectionCanvas exists?', document.getElementById('dashboardDetectionChart'));
-                    console.log('policyCanvas exists?', document.getElementById('dashboardPolicyChart'));
-                    console.log('platformCanvas exists?', document.getElementById('dashboardPlatformChart'));
+            if (DEBUG_MODE) console.log('requestAnimationFrame fired - checking for canvas elements');
+            if (DEBUG_MODE) console.log('Chart.js available?', typeof Chart !== 'undefined');
+            if (DEBUG_MODE) console.log('deviceCanvas exists?', document.getElementById('dashboardDeviceChart'));
+            if (DEBUG_MODE) console.log('detectionCanvas exists?', document.getElementById('dashboardDetectionChart'));
+            if (DEBUG_MODE) console.log('policyCanvas exists?', document.getElementById('dashboardPolicyChart'));
+            if (DEBUG_MODE) console.log('platformCanvas exists?', document.getElementById('dashboardPlatformChart'));
 
                     // Check actual dimensions
                     const testCanvas = document.getElementById('dashboardDeviceChart');
@@ -3649,11 +3652,11 @@
                         const parent = testCanvas.parentElement;
                         const chartsGrid = document.querySelector('.dashboard-charts-grid');
                         const contentContainer = document.getElementById('content');
-                        console.log('Content container dimensions:', contentContainer.offsetWidth, 'x', contentContainer.offsetHeight);
-                        console.log('Charts grid dimensions:', chartsGrid ? chartsGrid.offsetWidth + ' x ' + chartsGrid.offsetHeight : 'not found');
-                        console.log('Chart container dimensions:', parent.offsetWidth, 'x', parent.offsetHeight);
-                        console.log('Canvas element dimensions:', testCanvas.offsetWidth, 'x', testCanvas.offsetHeight);
-                        console.log('Canvas width/height attributes:', testCanvas.width, 'x', testCanvas.height);
+            if (DEBUG_MODE) console.log('Content container dimensions:', contentContainer.offsetWidth, 'x', contentContainer.offsetHeight);
+            if (DEBUG_MODE) console.log('Charts grid dimensions:', chartsGrid ? chartsGrid.offsetWidth + ' x ' + chartsGrid.offsetHeight : 'not found');
+            if (DEBUG_MODE) console.log('Chart container dimensions:', parent.offsetWidth, 'x', parent.offsetHeight);
+            if (DEBUG_MODE) console.log('Canvas element dimensions:', testCanvas.offsetWidth, 'x', testCanvas.offsetHeight);
+            if (DEBUG_MODE) console.log('Canvas width/height attributes:', testCanvas.width, 'x', testCanvas.height);
                     }
 
                 // Destroy existing charts
@@ -3670,11 +3673,11 @@
                     data: getDataAcrossSnapshots('stats', 'stats_data', metric)
                 }));
 
-                console.log('Device data:', deviceData);
+            if (DEBUG_MODE) console.log('Device data:', deviceData);
 
                 const deviceCanvas = document.getElementById('dashboardDeviceChart');
                 if (deviceCanvas) {
-                    console.log('Creating device chart...');
+            if (DEBUG_MODE) console.log('Creating device chart...');
                     try {
                         dashboardCharts.devices = new Chart(deviceCanvas.getContext('2d'), {
                         type: 'line',
@@ -3724,7 +3727,7 @@
                             }
                         }
                     });
-                    console.log('Device chart created successfully');
+            if (DEBUG_MODE) console.log('Device chart created successfully');
                 } catch (error) {
                     console.error('Error creating device chart:', error);
                 }
@@ -3741,7 +3744,7 @@
 
                 const detectionCanvas = document.getElementById('dashboardDetectionChart');
                 if (detectionCanvas) {
-                    console.log('Creating detection chart...');
+            if (DEBUG_MODE) console.log('Creating detection chart...');
                     try {
                         dashboardCharts.detections = new Chart(detectionCanvas.getContext('2d'), {
                         type: 'line',
@@ -3791,7 +3794,7 @@
                             }
                         }
                     });
-                    console.log('Detection chart created successfully');
+            if (DEBUG_MODE) console.log('Detection chart created successfully');
                 } catch (error) {
                     console.error('Error creating detection chart:', error);
                 }
@@ -3808,7 +3811,7 @@
 
                 const policyCanvas = document.getElementById('dashboardPolicyChart');
                 if (policyCanvas) {
-                    console.log('Creating policy chart...');
+            if (DEBUG_MODE) console.log('Creating policy chart...');
                     try {
                         dashboardCharts.policy = new Chart(policyCanvas.getContext('2d'), {
                         type: 'line',
@@ -3859,7 +3862,7 @@
                             }
                         }
                     });
-                    console.log('Policy chart created successfully');
+            if (DEBUG_MODE) console.log('Policy chart created successfully');
                 } catch (error) {
                     console.error('Error creating policy chart:', error);
                 }
@@ -3876,7 +3879,7 @@
 
                 const platformCanvas = document.getElementById('dashboardPlatformChart');
                 if (platformCanvas) {
-                    console.log('Creating platform chart...');
+            if (DEBUG_MODE) console.log('Creating platform chart...');
                     try {
                         dashboardCharts.platform = new Chart(platformCanvas.getContext('2d'), {
                         type: 'bar',
@@ -3927,7 +3930,7 @@
                             }
                         }
                     });
-                    console.log('Platform chart created successfully');
+            if (DEBUG_MODE) console.log('Platform chart created successfully');
                 } catch (error) {
                     console.error('Error creating platform chart:', error);
                 }
